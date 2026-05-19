@@ -1,0 +1,14 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "nextjs",
+  "crons": [
+    {
+      "path": "/api/cron/clima",
+      "schedule": "0 9 * * *"
+    },
+    {
+      "path": "/api/cron/faenas-abandonadas",
+      "schedule": "0 8 * * *"
+    }
+  ]
+}

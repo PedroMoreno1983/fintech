@@ -1,0 +1,152 @@
+/* =============================================================
+   Fintech CFO - globals.css (Next.js + Tailwind 4)
+   Tokens base para una interfaz financiera: sobria, azul y operativa.
+   ============================================================= */
+
+@import "tailwindcss";
+
+:root {
+  --font-sans: "Inter", "Inter Variable", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  /* Backgrounds */
+  --background: #f8fafc;
+  --foreground: #111827;
+  --color-bg: #f8fafc;
+  --color-surface: #ffffff;
+  --color-surface-alt: #f1f5f9;
+  --color-surface-muted: #e2e8f0;
+  --color-surface-hover: #eef2f7;
+
+  /* Foreground */
+  --color-fg1: #111827;
+  --color-fg2: #334155;
+  --color-fg3: #64748b;
+  --color-fg4: #94a3b8;
+
+  /* Lines */
+  --color-border: #e2e8f0;
+  --color-border-strong: #cbd5e1;
+  --color-border-light: #edf2f7;
+
+  /* Primary */
+  --color-primary: oklch(0.53 0.14 255);
+  --color-primary-hover: oklch(0.47 0.14 255);
+  --color-primary-active: oklch(0.40 0.13 255);
+  --color-primary-tint: oklch(0.96 0.025 255);
+  --color-primary-tint-md: oklch(0.91 0.055 255);
+  --color-focus: oklch(0.64 0.15 255);
+
+  /* Functional */
+  --color-info: oklch(0.55 0.10 240);
+  --color-info-soft: oklch(0.96 0.02 240);
+  --color-warn: oklch(0.70 0.13 75);
+  --color-warn-soft: oklch(0.96 0.04 75);
+  --color-danger: oklch(0.58 0.16 25);
+  --color-danger-soft: oklch(0.96 0.03 25);
+  --color-success: oklch(0.56 0.12 165);
+  --color-success-soft: oklch(0.96 0.03 165);
+
+  /* Shadows */
+  --shadow-card: 0 1px 2px 0 rgb(15 23 42 / 0.06), 0 1px 0 0 rgb(15 23 42 / 0.03);
+  --shadow-floating: 0 12px 32px -8px rgb(15 23 42 / 0.18), 0 2px 0 0 rgb(15 23 42 / 0.04);
+
+  /* Density */
+  --row-h: 36px;
+}
+
+[data-density="compact"]  { --row-h: 30px; }
+[data-density="generous"] { --row-h: 44px; }
+
+[data-theme="dark"] {
+  --background: #020617;
+  --foreground: #f8fafc;
+  --color-bg: #020617;
+  --color-surface: #0f172a;
+  --color-surface-alt: #111827;
+  --color-surface-muted: #1e293b;
+  --color-surface-hover: #172033;
+  --color-fg1: #f8fafc;
+  --color-fg2: #cbd5e1;
+  --color-fg3: #94a3b8;
+  --color-fg4: #64748b;
+  --color-border: #1e293b;
+  --color-border-strong: #334155;
+  --color-border-light: #172033;
+  --color-primary: oklch(0.70 0.14 255);
+  --color-primary-hover: oklch(0.78 0.14 255);
+  --color-primary-tint: oklch(0.28 0.06 255);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: "Inter", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  /* Legacy green/emerald classes are remapped to financial blue/teal. */
+  --color-green-50: oklch(0.97 0.018 255);
+  --color-green-100: oklch(0.94 0.035 255);
+  --color-green-200: oklch(0.88 0.055 255);
+  --color-green-300: oklch(0.80 0.075 255);
+  --color-green-400: oklch(0.70 0.095 255);
+  --color-green-500: oklch(0.62 0.12 255);
+  --color-green-600: oklch(0.53 0.14 255);
+  --color-green-700: oklch(0.47 0.14 255);
+  --color-green-800: oklch(0.40 0.13 255);
+  --color-green-900: oklch(0.33 0.10 255);
+  --color-green-950: oklch(0.23 0.07 255);
+
+  --color-emerald-50: oklch(0.97 0.02 195);
+  --color-emerald-100: oklch(0.94 0.04 195);
+  --color-emerald-600: oklch(0.55 0.11 195);
+  --color-emerald-700: oklch(0.49 0.11 195);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  font-feature-settings: "ss01", "cv11";
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+::selection {
+  background: var(--color-primary-tint);
+  color: var(--color-primary-active);
+}
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 999px;
+  border: 2px solid var(--background);
+}
+::-webkit-scrollbar-thumb:hover { background: var(--color-border-strong); }
+
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+
+.line-clamp-2 {
+  display: -webkit-box; -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical; overflow: hidden;
+}
+.safe-area-pb { padding-bottom: env(safe-area-inset-bottom, 0); }
+
+.tnum { font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
+
+.pill {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 1px 8px; height: 20px;
+  border-radius: 999px;
+  font-size: 11px; font-weight: 500;
+  background: var(--color-surface-muted);
+  color: var(--color-fg2);
+}
+.pill-primary { background: var(--color-primary-tint); color: var(--color-primary); }
+.pill-info    { background: var(--color-info-soft);    color: var(--color-info); }
+.pill-warn    { background: var(--color-warn-soft);    color: var(--color-warn); }
+.pill-danger  { background: var(--color-danger-soft);  color: var(--color-danger); }
+.pill-success { background: var(--color-success-soft); color: var(--color-success); }

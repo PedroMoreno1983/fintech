@@ -1,0 +1,5 @@
+sociedadCodigo;periodo;fecha;numero;descripcion;cuentaCodigo;glosa;debito;credito;terceroRut;terceroNombre;documentoTipo;documentoFolio;moneda
+MATRIZ;2026-05;2026-05-01;COMP-001;Venta mensual;1100;Ingreso a caja por venta;1000000; ;76234567-8;Cliente Demo;Factura;1001;CLP
+MATRIZ;2026-05;2026-05-01;COMP-001;Venta mensual;4000;Ingreso operacional; ;1000000;76234567-8;Cliente Demo;Factura;1001;CLP
+MATRIZ;2026-05;2026-05-03;COMP-002;Compra insumos;5000;Costo directo de insumos;250000; ;76987654-3;Proveedor Demo;Factura;450;CLP
+MATRIZ;2026-05;2026-05-03;COMP-002;Compra insumos;2100;Cuenta por pagar proveedor; ;250000;76987654-3;Proveedor Demo;Factura;450;CLP

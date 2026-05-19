@@ -1,0 +1,963 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------------------------------------------------------------------------
+// CORE: MULTIEMPRESA Y USUARIOS
+// ---------------------------------------------------------------------------
+
+model Empresa {
+  id        String   @id @default(cuid())
+  nombre    String
+  rut       String?  @unique
+  logoUrl   String?
+  plan      Plan     @default(SEMILLA)
+  activa    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  usuarios                Usuario[]
+  cfoSociedades           CfoSociedad[]
+  cfoUnidadesNegocio      CfoUnidadNegocio[]
+  cfoCentrosCosto         CfoCentroCosto[]
+  cfoCuentasContables     CfoCuentaContable[]
+  cfoPeriodos             CfoPeriodo[]
+  cfoFuentesDatos         CfoFuenteDatos[]
+  cfoMapeosCuenta         CfoMapeoCuenta[]
+  cfoImportaciones        CfoImportacion[]
+  cfoAsientos             CfoAsientoContable[]
+  cfoAsientoLineas        CfoAsientoLinea[]
+  cfoIntercompany         CfoIntercompanyOperacion[]
+  cfoConsolidaciones      CfoConsolidacion[]
+  cfoAjustesConsolidacion CfoAjusteConsolidacion[]
+  cfoEliminaciones        CfoEliminacionIntercompany[]
+  cfoEscenarios           CfoEscenario[]
+  cfoPlanesFinancieros    CfoPlanFinanciero[]
+  cfoPlanLineas           CfoPlanLinea[]
+  cfoReportes             CfoReporte[]
+  cfoReporteLineas        CfoReporteLinea[]
+  cfoComentarios          CfoComentarioFinanciero[]
+  cfoInsights             CfoInsightCfo[]
+  cfoWorkflows            CfoWorkflowAprobacion[]
+  cfoAuditLogs            CfoAuditLog[]
+  cfoIndicadoresEsg       CfoIndicadorEsg[]
+  cfoMedicionesEsg        CfoMedicionEsg[]
+}
+
+enum Plan {
+  SEMILLA
+  PRO
+  ENTERPRISE
+}
+
+model Usuario {
+  id           String    @id @default(cuid())
+  empresaId    String
+  empresa      Empresa   @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  nombre       String
+  email        String    @unique
+  passwordHash String
+  rol          Rol
+  avatarUrl    String?
+  activo       Boolean   @default(true)
+  ultimoAcceso DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  cfoCentrosCostoResponsable  CfoCentroCosto[]          @relation("CfoCentroCostoResponsable")
+  cfoPeriodosCerrados         CfoPeriodo[]              @relation("CfoPeriodoCerradoPor")
+  cfoImportacionesCreadas     CfoImportacion[]          @relation("CfoImportacionCreadaPor")
+  cfoConsolidacionesCreadas   CfoConsolidacion[]        @relation("CfoConsolidacionCreadaPor")
+  cfoConsolidacionesAprobadas CfoConsolidacion[]        @relation("CfoConsolidacionAprobadaPor")
+  cfoAjustesCreados           CfoAjusteConsolidacion[]  @relation("CfoAjusteCreadoPor")
+  cfoAjustesAprobados         CfoAjusteConsolidacion[]  @relation("CfoAjusteAprobadoPor")
+  cfoEscenariosCreados        CfoEscenario[]            @relation("CfoEscenarioCreadoPor")
+  cfoPlanesCreados            CfoPlanFinanciero[]       @relation("CfoPlanCreadoPor")
+  cfoPlanesAprobados          CfoPlanFinanciero[]       @relation("CfoPlanAprobadoPor")
+  cfoReportesGenerados        CfoReporte[]              @relation("CfoReporteGeneradoPor")
+  cfoReportesAprobados        CfoReporte[]              @relation("CfoReporteAprobadoPor")
+  cfoComentariosCreados       CfoComentarioFinanciero[] @relation("CfoComentarioCreadoPor")
+  cfoInsightsCreados          CfoInsightCfo[]           @relation("CfoInsightCreadoPor")
+  cfoWorkflowsSolicitados     CfoWorkflowAprobacion[]   @relation("CfoWorkflowSolicitadoPor")
+  cfoWorkflowsAprobados       CfoWorkflowAprobacion[]   @relation("CfoWorkflowAprobadoPor")
+  cfoWorkflowsRechazados      CfoWorkflowAprobacion[]   @relation("CfoWorkflowRechazadoPor")
+  cfoAuditLogs                CfoAuditLog[]             @relation("CfoAuditUsuario")
+  cfoMedicionesEsgRegistradas CfoMedicionEsg[]          @relation("CfoMedicionEsgRegistradaPor")
+}
+
+enum Rol {
+  SUPERADMIN
+  EMPRESA_ADMIN
+  ADMIN_FINANZAS
+}
+
+// ---------------------------------------------------------------------------
+// CFO PLATFORM: CONSOLIDACION, PLANIFICACION Y REPORTING FINANCIERO
+// ---------------------------------------------------------------------------
+
+model CfoSociedad {
+  id                      String          @id @default(cuid())
+  empresaId               String
+  empresa                 Empresa         @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  matrizId                String?
+  matriz                  CfoSociedad?    @relation("CfoEstructuraSocietaria", fields: [matrizId], references: [id], onDelete: SetNull)
+  codigo                  String
+  razonSocial             String
+  nombreFantasia          String?
+  rut                     String?
+  pais                    String          @default("CL")
+  monedaFuncional         String          @default("CLP")
+  tipo                    CfoTipoSociedad @default(OPERATIVA)
+  porcentajeParticipacion Decimal?        @db.Decimal(7, 4)
+  activa                  Boolean         @default(true)
+  createdAt               DateTime        @default(now())
+  updatedAt               DateTime        @updatedAt
+
+  subsidiarias          CfoSociedad[]                @relation("CfoEstructuraSocietaria")
+  unidadesNegocio       CfoUnidadNegocio[]
+  centrosCosto          CfoCentroCosto[]
+  importaciones         CfoImportacion[]
+  asientos              CfoAsientoContable[]
+  asientoLineas         CfoAsientoLinea[]
+  intercompanyOrigen    CfoIntercompanyOperacion[]   @relation("CfoIntercompanySociedadOrigen")
+  intercompanyDestino   CfoIntercompanyOperacion[]   @relation("CfoIntercompanySociedadDestino")
+  consolidacionesMatriz CfoConsolidacion[]           @relation("CfoConsolidacionSociedadMatriz")
+  ajustesConsolidacion  CfoAjusteConsolidacion[]
+  eliminacionesOrigen   CfoEliminacionIntercompany[] @relation("CfoEliminacionSociedadOrigen")
+  eliminacionesDestino  CfoEliminacionIntercompany[] @relation("CfoEliminacionSociedadDestino")
+  planLineas            CfoPlanLinea[]
+  reporteLineas         CfoReporteLinea[]
+  comentarios           CfoComentarioFinanciero[]
+  insights              CfoInsightCfo[]
+  medicionesEsg         CfoMedicionEsg[]
+
+  @@unique([empresaId, codigo])
+  @@index([empresaId, activa, razonSocial])
+  @@index([matrizId])
+}
+
+enum CfoTipoSociedad {
+  MATRIZ
+  HOLDING
+  OPERATIVA
+  FILIAL
+  JOINT_VENTURE
+}
+
+model CfoUnidadNegocio {
+  id          String            @id @default(cuid())
+  empresaId   String
+  empresa     Empresa           @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  sociedadId  String?
+  sociedad    CfoSociedad?      @relation(fields: [sociedadId], references: [id], onDelete: SetNull)
+  parentId    String?
+  parent      CfoUnidadNegocio? @relation("CfoUnidadNegocioJerarquia", fields: [parentId], references: [id], onDelete: SetNull)
+  codigo      String
+  nombre      String
+  descripcion String?
+  activa      Boolean           @default(true)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  subunidades   CfoUnidadNegocio[] @relation("CfoUnidadNegocioJerarquia")
+  centrosCosto  CfoCentroCosto[]
+  asientoLineas CfoAsientoLinea[]
+  planLineas    CfoPlanLinea[]
+
+  @@unique([empresaId, codigo])
+  @@index([empresaId, activa, nombre])
+  @@index([sociedadId])
+  @@index([parentId])
+}
+
+model CfoCentroCosto {
+  id              String            @id @default(cuid())
+  empresaId       String
+  empresa         Empresa           @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  sociedadId      String?
+  sociedad        CfoSociedad?      @relation(fields: [sociedadId], references: [id], onDelete: SetNull)
+  unidadNegocioId String?
+  unidadNegocio   CfoUnidadNegocio? @relation(fields: [unidadNegocioId], references: [id], onDelete: SetNull)
+  responsableId   String?
+  responsable     Usuario?          @relation("CfoCentroCostoResponsable", fields: [responsableId], references: [id], onDelete: SetNull)
+  codigo          String
+  nombre          String
+  categoria       String?
+  descripcion     String?
+  activo          Boolean           @default(true)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  asientoLineas CfoAsientoLinea[]
+  planLineas    CfoPlanLinea[]
+  medicionesEsg CfoMedicionEsg[]
+
+  @@unique([empresaId, codigo])
+  @@index([empresaId, activo, nombre])
+  @@index([sociedadId])
+  @@index([unidadNegocioId])
+  @@index([responsableId])
+}
+
+model CfoCuentaContable {
+  id          String              @id @default(cuid())
+  empresaId   String
+  empresa     Empresa             @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  parentId    String?
+  parent      CfoCuentaContable?  @relation("CfoCuentaJerarquia", fields: [parentId], references: [id], onDelete: SetNull)
+  codigo      String
+  nombre      String
+  tipo        CfoTipoCuenta
+  naturaleza  CfoNaturalezaCuenta
+  nivel       Int                 @default(1)
+  moneda      String?
+  esImputable Boolean             @default(true)
+  activa      Boolean             @default(true)
+  metadata    Json?
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  subcuentas           CfoCuentaContable[]        @relation("CfoCuentaJerarquia")
+  mapeosOrigen         CfoMapeoCuenta[]
+  asientoLineas        CfoAsientoLinea[]
+  intercompany         CfoIntercompanyOperacion[]
+  ajustesConsolidacion CfoAjusteConsolidacion[]
+  planLineas           CfoPlanLinea[]
+  reporteLineas        CfoReporteLinea[]
+  comentarios          CfoComentarioFinanciero[]
+  insights             CfoInsightCfo[]
+
+  @@unique([empresaId, codigo])
+  @@index([empresaId, tipo, activa])
+  @@index([parentId])
+}
+
+enum CfoTipoCuenta {
+  ACTIVO
+  PASIVO
+  PATRIMONIO
+  INGRESO
+  COSTO
+  GASTO
+  ORDEN
+}
+
+enum CfoNaturalezaCuenta {
+  DEUDORA
+  ACREEDORA
+}
+
+model CfoPeriodo {
+  id           String           @id @default(cuid())
+  empresaId    String
+  empresa      Empresa          @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  codigo       String
+  anio         Int
+  mes          Int?
+  fechaInicio  DateTime
+  fechaFin     DateTime
+  estado       CfoEstadoPeriodo @default(ABIERTO)
+  cerradoPorId String?
+  cerradoPor   Usuario?         @relation("CfoPeriodoCerradoPor", fields: [cerradoPorId], references: [id], onDelete: SetNull)
+  cerradoAt    DateTime?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  importaciones   CfoImportacion[]
+  asientos        CfoAsientoContable[]
+  intercompany    CfoIntercompanyOperacion[]
+  consolidaciones CfoConsolidacion[]
+  planes          CfoPlanFinanciero[]
+  reportes        CfoReporte[]
+  comentarios     CfoComentarioFinanciero[]
+  insights        CfoInsightCfo[]
+  medicionesEsg   CfoMedicionEsg[]
+
+  @@unique([empresaId, codigo])
+  @@index([empresaId, estado, fechaInicio])
+}
+
+enum CfoEstadoPeriodo {
+  ABIERTO
+  EN_CIERRE
+  CERRADO
+  BLOQUEADO
+}
+
+model CfoFuenteDatos {
+  id           String            @id @default(cuid())
+  empresaId    String
+  empresa      Empresa           @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  nombre       String
+  tipo         CfoTipoFuenteDato
+  sistema      String?
+  descripcion  String?
+  credenciales Json?
+  activo       Boolean           @default(true)
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  mapeosCuenta  CfoMapeoCuenta[]
+  importaciones CfoImportacion[]
+
+  @@unique([empresaId, nombre])
+  @@index([empresaId, tipo, activo])
+}
+
+enum CfoTipoFuenteDato {
+  ERP
+  CONTABILIDAD
+  EXCEL
+  CSV
+  API
+  SII
+  MANUAL
+}
+
+model CfoMapeoCuenta {
+  id           String            @id @default(cuid())
+  empresaId    String
+  empresa      Empresa           @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  fuenteId     String
+  fuente       CfoFuenteDatos    @relation(fields: [fuenteId], references: [id], onDelete: Cascade)
+  cuentaId     String
+  cuenta       CfoCuentaContable @relation(fields: [cuentaId], references: [id], onDelete: Cascade)
+  codigoOrigen String
+  nombreOrigen String?
+  regla        Json?
+  activo       Boolean           @default(true)
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  @@unique([fuenteId, codigoOrigen])
+  @@index([empresaId, activo])
+  @@index([cuentaId])
+}
+
+model CfoImportacion {
+  id            String               @id @default(cuid())
+  empresaId     String
+  empresa       Empresa              @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  fuenteId      String?
+  fuente        CfoFuenteDatos?      @relation(fields: [fuenteId], references: [id], onDelete: SetNull)
+  sociedadId    String?
+  sociedad      CfoSociedad?         @relation(fields: [sociedadId], references: [id], onDelete: SetNull)
+  periodoId     String?
+  periodo       CfoPeriodo?          @relation(fields: [periodoId], references: [id], onDelete: SetNull)
+  creadoPorId   String
+  creadoPor     Usuario              @relation("CfoImportacionCreadaPor", fields: [creadoPorId], references: [id])
+  estado        CfoEstadoImportacion @default(RECIBIDA)
+  nombreArchivo String?
+  checksum      String?
+  filasTotales  Int                  @default(0)
+  filasValidas  Int                  @default(0)
+  errores       Json?
+  metadata      Json?
+  procesadaAt   DateTime?
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+
+  asientos CfoAsientoContable[]
+
+  @@index([empresaId, estado, createdAt])
+  @@index([fuenteId])
+  @@index([sociedadId])
+  @@index([periodoId])
+  @@index([creadoPorId])
+}
+
+enum CfoEstadoImportacion {
+  RECIBIDA
+  VALIDANDO
+  CON_ERRORES
+  PROCESADA
+  REVERTIDA
+}
+
+model CfoAsientoContable {
+  id             String          @id @default(cuid())
+  empresaId      String
+  empresa        Empresa         @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  sociedadId     String
+  sociedad       CfoSociedad     @relation(fields: [sociedadId], references: [id], onDelete: Cascade)
+  periodoId      String
+  periodo        CfoPeriodo      @relation(fields: [periodoId], references: [id], onDelete: Cascade)
+  importacionId  String?
+  importacion    CfoImportacion? @relation(fields: [importacionId], references: [id], onDelete: SetNull)
+  origen         CfoOrigenDato   @default(MANUAL)
+  numero         String?
+  fecha          DateTime
+  descripcion    String?
+  terceroRut     String?
+  terceroNombre  String?
+  documentoTipo  String?
+  documentoFolio String?
+  moneda         String          @default("CLP")
+  tipoCambio     Decimal?        @db.Decimal(18, 8)
+  metadata       Json?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  lineas CfoAsientoLinea[]
+
+  @@index([empresaId, fecha])
+  @@index([sociedadId, periodoId])
+  @@index([periodoId, origen])
+  @@index([importacionId])
+}
+
+enum CfoOrigenDato {
+  MANUAL
+  IMPORTACION
+  ERP
+  SII
+  AJUSTE
+  CONSOLIDACION
+}
+
+model CfoAsientoLinea {
+  id              String             @id @default(cuid())
+  empresaId       String
+  empresa         Empresa            @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  asientoId       String
+  asiento         CfoAsientoContable @relation(fields: [asientoId], references: [id], onDelete: Cascade)
+  sociedadId      String
+  sociedad        CfoSociedad        @relation(fields: [sociedadId], references: [id], onDelete: Cascade)
+  cuentaId        String
+  cuenta          CfoCuentaContable  @relation(fields: [cuentaId], references: [id])
+  centroCostoId   String?
+  centroCosto     CfoCentroCosto?    @relation(fields: [centroCostoId], references: [id], onDelete: SetNull)
+  unidadNegocioId String?
+  unidadNegocio   CfoUnidadNegocio?  @relation(fields: [unidadNegocioId], references: [id], onDelete: SetNull)
+  glosa           String?
+  debito          Decimal            @default(0) @db.Decimal(18, 4)
+  credito         Decimal            @default(0) @db.Decimal(18, 4)
+  monto           Decimal            @db.Decimal(18, 4)
+  moneda          String             @default("CLP")
+  metadata        Json?
+
+  @@index([empresaId, cuentaId])
+  @@index([asientoId])
+  @@index([sociedadId, cuentaId])
+  @@index([centroCostoId])
+  @@index([unidadNegocioId])
+}
+
+model CfoIntercompanyOperacion {
+  id                String             @id @default(cuid())
+  empresaId         String
+  empresa           Empresa            @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  periodoId         String
+  periodo           CfoPeriodo         @relation(fields: [periodoId], references: [id], onDelete: Cascade)
+  sociedadOrigenId  String
+  sociedadOrigen    CfoSociedad        @relation("CfoIntercompanySociedadOrigen", fields: [sociedadOrigenId], references: [id], onDelete: Cascade)
+  sociedadDestinoId String
+  sociedadDestino   CfoSociedad        @relation("CfoIntercompanySociedadDestino", fields: [sociedadDestinoId], references: [id], onDelete: Cascade)
+  cuentaId          String?
+  cuenta            CfoCuentaContable? @relation(fields: [cuentaId], references: [id], onDelete: SetNull)
+  documentoRef      String?
+  descripcion       String?
+  monto             Decimal            @db.Decimal(18, 4)
+  moneda            String             @default("CLP")
+  conciliada        Boolean            @default(false)
+  diferencia        Decimal?           @db.Decimal(18, 4)
+  metadata          Json?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  eliminaciones CfoEliminacionIntercompany[]
+
+  @@index([empresaId, periodoId, conciliada])
+  @@index([sociedadOrigenId, sociedadDestinoId])
+  @@index([cuentaId])
+}
+
+model CfoConsolidacion {
+  id                 String                 @id @default(cuid())
+  empresaId          String
+  empresa            Empresa                @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  periodoId          String
+  periodo            CfoPeriodo             @relation(fields: [periodoId], references: [id], onDelete: Cascade)
+  sociedadMatrizId   String?
+  sociedadMatriz     CfoSociedad?           @relation("CfoConsolidacionSociedadMatriz", fields: [sociedadMatrizId], references: [id], onDelete: SetNull)
+  creadoPorId        String
+  creadoPor          Usuario                @relation("CfoConsolidacionCreadaPor", fields: [creadoPorId], references: [id])
+  aprobadoPorId      String?
+  aprobadoPor        Usuario?               @relation("CfoConsolidacionAprobadaPor", fields: [aprobadoPorId], references: [id], onDelete: SetNull)
+  estado             CfoEstadoConsolidacion @default(BORRADOR)
+  version            Int                    @default(1)
+  monedaPresentacion String                 @default("CLP")
+  snapshot           Json?
+  resumenEjecutivo   String?
+  aprobadoAt         DateTime?
+  createdAt          DateTime               @default(now())
+  updatedAt          DateTime               @updatedAt
+
+  ajustes       CfoAjusteConsolidacion[]
+  eliminaciones CfoEliminacionIntercompany[]
+  reportes      CfoReporte[]
+
+  @@unique([empresaId, periodoId, version])
+  @@index([empresaId, estado, createdAt])
+  @@index([sociedadMatrizId])
+  @@index([creadoPorId])
+  @@index([aprobadoPorId])
+}
+
+enum CfoEstadoConsolidacion {
+  BORRADOR
+  EN_REVISION
+  APROBADA
+  CERRADA
+  REABIERTA
+}
+
+model CfoAjusteConsolidacion {
+  id              String             @id @default(cuid())
+  empresaId       String
+  empresa         Empresa            @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  consolidacionId String
+  consolidacion   CfoConsolidacion   @relation(fields: [consolidacionId], references: [id], onDelete: Cascade)
+  sociedadId      String?
+  sociedad        CfoSociedad?       @relation(fields: [sociedadId], references: [id], onDelete: SetNull)
+  cuentaId        String?
+  cuenta          CfoCuentaContable? @relation(fields: [cuentaId], references: [id], onDelete: SetNull)
+  creadoPorId     String
+  creadoPor       Usuario            @relation("CfoAjusteCreadoPor", fields: [creadoPorId], references: [id])
+  aprobadoPorId   String?
+  aprobadoPor     Usuario?           @relation("CfoAjusteAprobadoPor", fields: [aprobadoPorId], references: [id], onDelete: SetNull)
+  tipo            CfoTipoAjuste
+  estado          CfoWorkflowEstado  @default(PENDIENTE)
+  descripcion     String
+  montoDebe       Decimal            @default(0) @db.Decimal(18, 4)
+  montoHaber      Decimal            @default(0) @db.Decimal(18, 4)
+  moneda          String             @default("CLP")
+  evidenciaUrl    String?
+  metadata        Json?
+  aprobadoAt      DateTime?
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  @@index([empresaId, estado, createdAt])
+  @@index([consolidacionId])
+  @@index([sociedadId])
+  @@index([cuentaId])
+  @@index([creadoPorId])
+  @@index([aprobadoPorId])
+}
+
+enum CfoTipoAjuste {
+  RECLASIFICACION
+  DEVENGO
+  PROVISION
+  ELIMINACION
+  CONVERSION_MONEDA
+  CORRECCION
+  OTRO
+}
+
+model CfoEliminacionIntercompany {
+  id                String                    @id @default(cuid())
+  empresaId         String
+  empresa           Empresa                   @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  consolidacionId   String
+  consolidacion     CfoConsolidacion          @relation(fields: [consolidacionId], references: [id], onDelete: Cascade)
+  operacionId       String?
+  operacion         CfoIntercompanyOperacion? @relation(fields: [operacionId], references: [id], onDelete: SetNull)
+  sociedadOrigenId  String
+  sociedadOrigen    CfoSociedad               @relation("CfoEliminacionSociedadOrigen", fields: [sociedadOrigenId], references: [id], onDelete: Cascade)
+  sociedadDestinoId String
+  sociedadDestino   CfoSociedad               @relation("CfoEliminacionSociedadDestino", fields: [sociedadDestinoId], references: [id], onDelete: Cascade)
+  estado            CfoWorkflowEstado         @default(PENDIENTE)
+  descripcion       String?
+  montoDebe         Decimal                   @default(0) @db.Decimal(18, 4)
+  montoHaber        Decimal                   @default(0) @db.Decimal(18, 4)
+  diferencia        Decimal?                  @db.Decimal(18, 4)
+  moneda            String                    @default("CLP")
+  metadata          Json?
+  createdAt         DateTime                  @default(now())
+  updatedAt         DateTime                  @updatedAt
+
+  @@index([empresaId, estado])
+  @@index([consolidacionId])
+  @@index([operacionId])
+  @@index([sociedadOrigenId, sociedadDestinoId])
+}
+
+model CfoEscenario {
+  id              String           @id @default(cuid())
+  empresaId       String
+  empresa         Empresa          @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  baseEscenarioId String?
+  baseEscenario   CfoEscenario?    @relation("CfoEscenarioBase", fields: [baseEscenarioId], references: [id], onDelete: SetNull)
+  creadoPorId     String
+  creadoPor       Usuario          @relation("CfoEscenarioCreadoPor", fields: [creadoPorId], references: [id])
+  codigo          String
+  nombre          String
+  tipo            CfoTipoEscenario @default(PRESUPUESTO)
+  version         Int              @default(1)
+  moneda          String           @default("CLP")
+  supuestos       Json?
+  activo          Boolean          @default(true)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  derivados CfoEscenario[]      @relation("CfoEscenarioBase")
+  planes    CfoPlanFinanciero[]
+
+  @@unique([empresaId, codigo, version])
+  @@index([empresaId, tipo, activo])
+  @@index([baseEscenarioId])
+  @@index([creadoPorId])
+}
+
+enum CfoTipoEscenario {
+  PRESUPUESTO
+  FORECAST
+  BASE
+  OPTIMISTA
+  PESIMISTA
+  STRESS_TEST
+}
+
+model CfoPlanFinanciero {
+  id            String        @id @default(cuid())
+  empresaId     String
+  empresa       Empresa       @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  escenarioId   String
+  escenario     CfoEscenario  @relation(fields: [escenarioId], references: [id], onDelete: Cascade)
+  periodoId     String
+  periodo       CfoPeriodo    @relation(fields: [periodoId], references: [id], onDelete: Cascade)
+  creadoPorId   String
+  creadoPor     Usuario       @relation("CfoPlanCreadoPor", fields: [creadoPorId], references: [id])
+  aprobadoPorId String?
+  aprobadoPor   Usuario?      @relation("CfoPlanAprobadoPor", fields: [aprobadoPorId], references: [id], onDelete: SetNull)
+  nombre        String
+  estado        CfoEstadoPlan @default(BORRADOR)
+  version       Int           @default(1)
+  moneda        String        @default("CLP")
+  comentario    String?
+  aprobadoAt    DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  lineas CfoPlanLinea[]
+
+  @@unique([empresaId, escenarioId, periodoId, version])
+  @@index([empresaId, estado])
+  @@index([periodoId])
+  @@index([creadoPorId])
+  @@index([aprobadoPorId])
+}
+
+enum CfoEstadoPlan {
+  BORRADOR
+  EN_REVISION
+  APROBADO
+  BLOQUEADO
+  ARCHIVADO
+}
+
+model CfoPlanLinea {
+  id              String            @id @default(cuid())
+  empresaId       String
+  empresa         Empresa           @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  planId          String
+  plan            CfoPlanFinanciero @relation(fields: [planId], references: [id], onDelete: Cascade)
+  cuentaId        String
+  cuenta          CfoCuentaContable @relation(fields: [cuentaId], references: [id])
+  sociedadId      String?
+  sociedad        CfoSociedad?      @relation(fields: [sociedadId], references: [id], onDelete: SetNull)
+  unidadNegocioId String?
+  unidadNegocio   CfoUnidadNegocio? @relation(fields: [unidadNegocioId], references: [id], onDelete: SetNull)
+  centroCostoId   String?
+  centroCosto     CfoCentroCosto?   @relation(fields: [centroCostoId], references: [id], onDelete: SetNull)
+  monto           Decimal           @db.Decimal(18, 4)
+  moneda          String            @default("CLP")
+  driver          String?
+  formula         String?
+  comentario      String?
+  metadata        Json?
+
+  @@index([empresaId, cuentaId])
+  @@index([planId])
+  @@index([sociedadId])
+  @@index([unidadNegocioId])
+  @@index([centroCostoId])
+}
+
+model CfoReporte {
+  id              String            @id @default(cuid())
+  empresaId       String
+  empresa         Empresa           @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  periodoId       String
+  periodo         CfoPeriodo        @relation(fields: [periodoId], references: [id], onDelete: Cascade)
+  consolidacionId String?
+  consolidacion   CfoConsolidacion? @relation(fields: [consolidacionId], references: [id], onDelete: SetNull)
+  generadoPorId   String
+  generadoPor     Usuario           @relation("CfoReporteGeneradoPor", fields: [generadoPorId], references: [id])
+  aprobadoPorId   String?
+  aprobadoPor     Usuario?          @relation("CfoReporteAprobadoPor", fields: [aprobadoPorId], references: [id], onDelete: SetNull)
+  tipo            CfoTipoReporte
+  estado          CfoEstadoReporte  @default(BORRADOR)
+  nombre          String
+  version         Int               @default(1)
+  moneda          String            @default("CLP")
+  data            Json?
+  exportUrl       String?
+  aprobadoAt      DateTime?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  lineas      CfoReporteLinea[]
+  comentarios CfoComentarioFinanciero[]
+
+  @@unique([empresaId, periodoId, tipo, version])
+  @@index([empresaId, estado, createdAt])
+  @@index([consolidacionId])
+  @@index([generadoPorId])
+  @@index([aprobadoPorId])
+}
+
+enum CfoTipoReporte {
+  ESTADO_RESULTADOS
+  BALANCE
+  FLUJO_CAJA
+  PACK_DIRECTORIO
+  ESG
+  XBRL
+  GESTION
+}
+
+enum CfoEstadoReporte {
+  BORRADOR
+  GENERADO
+  EN_REVISION
+  APROBADO
+  PUBLICADO
+  ARCHIVADO
+}
+
+model CfoReporteLinea {
+  id               String             @id @default(cuid())
+  empresaId        String
+  empresa          Empresa            @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  reporteId        String
+  reporte          CfoReporte         @relation(fields: [reporteId], references: [id], onDelete: Cascade)
+  cuentaId         String?
+  cuenta           CfoCuentaContable? @relation(fields: [cuentaId], references: [id], onDelete: SetNull)
+  sociedadId       String?
+  sociedad         CfoSociedad?       @relation(fields: [sociedadId], references: [id], onDelete: SetNull)
+  etiqueta         String
+  orden            Int                @default(0)
+  montoActual      Decimal?           @db.Decimal(18, 4)
+  montoComparativo Decimal?           @db.Decimal(18, 4)
+  variacion        Decimal?           @db.Decimal(18, 4)
+  variacionPct     Decimal?           @db.Decimal(9, 4)
+  metadata         Json?
+
+  @@index([empresaId, reporteId])
+  @@index([cuentaId])
+  @@index([sociedadId])
+}
+
+model CfoComentarioFinanciero {
+  id          String             @id @default(cuid())
+  empresaId   String
+  empresa     Empresa            @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  periodoId   String?
+  periodo     CfoPeriodo?        @relation(fields: [periodoId], references: [id], onDelete: SetNull)
+  reporteId   String?
+  reporte     CfoReporte?        @relation(fields: [reporteId], references: [id], onDelete: Cascade)
+  cuentaId    String?
+  cuenta      CfoCuentaContable? @relation(fields: [cuentaId], references: [id], onDelete: SetNull)
+  sociedadId  String?
+  sociedad    CfoSociedad?       @relation(fields: [sociedadId], references: [id], onDelete: SetNull)
+  creadoPorId String
+  creadoPor   Usuario            @relation("CfoComentarioCreadoPor", fields: [creadoPorId], references: [id])
+  titulo      String
+  contenido   String
+  fuenteIa    Boolean            @default(false)
+  modeloUsado String?
+  tags        Json?
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  @@index([empresaId, createdAt])
+  @@index([periodoId])
+  @@index([reporteId])
+  @@index([cuentaId])
+  @@index([sociedadId])
+  @@index([creadoPorId])
+}
+
+model CfoInsightCfo {
+  id              String              @id @default(cuid())
+  empresaId       String
+  empresa         Empresa             @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  periodoId       String?
+  periodo         CfoPeriodo?         @relation(fields: [periodoId], references: [id], onDelete: SetNull)
+  cuentaId        String?
+  cuenta          CfoCuentaContable?  @relation(fields: [cuentaId], references: [id], onDelete: SetNull)
+  sociedadId      String?
+  sociedad        CfoSociedad?        @relation(fields: [sociedadId], references: [id], onDelete: SetNull)
+  creadoPorId     String?
+  creadoPor       Usuario?            @relation("CfoInsightCreadoPor", fields: [creadoPorId], references: [id], onDelete: SetNull)
+  tipo            CfoTipoInsight
+  severidad       CfoSeveridadInsight @default(INFO)
+  estado          CfoWorkflowEstado   @default(PENDIENTE)
+  titulo          String
+  descripcion     String
+  metrica         String?
+  valorActual     Decimal?            @db.Decimal(18, 4)
+  valorReferencia Decimal?            @db.Decimal(18, 4)
+  confianza       Decimal?            @db.Decimal(5, 4)
+  metadata        Json?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  @@index([empresaId, severidad, estado])
+  @@index([periodoId])
+  @@index([cuentaId])
+  @@index([sociedadId])
+  @@index([creadoPorId])
+}
+
+enum CfoTipoInsight {
+  DESVIACION
+  ANOMALIA
+  TENDENCIA
+  RIESGO_CAJA
+  OPORTUNIDAD
+  COMENTARIO_EJECUTIVO
+}
+
+enum CfoSeveridadInsight {
+  INFO
+  WARNING
+  CRITICAL
+}
+
+enum CfoWorkflowEstado {
+  PENDIENTE
+  EN_REVISION
+  APROBADO
+  RECHAZADO
+  CERRADO
+}
+
+model CfoWorkflowAprobacion {
+  id              String            @id @default(cuid())
+  empresaId       String
+  empresa         Empresa           @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  solicitadoPorId String
+  solicitadoPor   Usuario           @relation("CfoWorkflowSolicitadoPor", fields: [solicitadoPorId], references: [id])
+  aprobadoPorId   String?
+  aprobadoPor     Usuario?          @relation("CfoWorkflowAprobadoPor", fields: [aprobadoPorId], references: [id], onDelete: SetNull)
+  rechazadoPorId  String?
+  rechazadoPor    Usuario?          @relation("CfoWorkflowRechazadoPor", fields: [rechazadoPorId], references: [id], onDelete: SetNull)
+  entidadTipo     String
+  entidadId       String
+  estado          CfoWorkflowEstado @default(PENDIENTE)
+  comentario      String?
+  solicitadoAt    DateTime          @default(now())
+  resueltoAt      DateTime?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@index([empresaId, entidadTipo, entidadId])
+  @@index([empresaId, estado, solicitadoAt])
+  @@index([solicitadoPorId])
+  @@index([aprobadoPorId])
+  @@index([rechazadoPorId])
+}
+
+model CfoAuditLog {
+  id          String         @id @default(cuid())
+  empresaId   String
+  empresa     Empresa        @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  usuarioId   String?
+  usuario     Usuario?       @relation("CfoAuditUsuario", fields: [usuarioId], references: [id], onDelete: SetNull)
+  accion      CfoAuditAccion
+  entidadTipo String
+  entidadId   String
+  antes       Json?
+  despues     Json?
+  metadata    Json?
+  createdAt   DateTime       @default(now())
+
+  @@index([empresaId, createdAt])
+  @@index([usuarioId, createdAt])
+  @@index([entidadTipo, entidadId])
+}
+
+enum CfoAuditAccion {
+  CREAR
+  ACTUALIZAR
+  ELIMINAR
+  APROBAR
+  RECHAZAR
+  CERRAR
+  REABRIR
+  IMPORTAR
+  EXPORTAR
+}
+
+model CfoIndicadorEsg {
+  id          String          @id @default(cuid())
+  empresaId   String
+  empresa     Empresa         @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  codigo      String
+  nombre      String
+  categoria   CfoCategoriaEsg
+  unidad      String
+  descripcion String?
+  activo      Boolean         @default(true)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  mediciones CfoMedicionEsg[]
+
+  @@unique([empresaId, codigo])
+  @@index([empresaId, categoria, activo])
+}
+
+enum CfoCategoriaEsg {
+  AMBIENTAL
+  SOCIAL
+  GOBERNANZA
+}
+
+model CfoMedicionEsg {
+  id              String          @id @default(cuid())
+  empresaId       String
+  empresa         Empresa         @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  indicadorId     String
+  indicador       CfoIndicadorEsg @relation(fields: [indicadorId], references: [id], onDelete: Cascade)
+  periodoId       String
+  periodo         CfoPeriodo      @relation(fields: [periodoId], references: [id], onDelete: Cascade)
+  sociedadId      String?
+  sociedad        CfoSociedad?    @relation(fields: [sociedadId], references: [id], onDelete: SetNull)
+  centroCostoId   String?
+  centroCosto     CfoCentroCosto? @relation(fields: [centroCostoId], references: [id], onDelete: SetNull)
+  registradoPorId String?
+  registradoPor   Usuario?        @relation("CfoMedicionEsgRegistradaPor", fields: [registradoPorId], references: [id], onDelete: SetNull)
+  valor           Decimal         @db.Decimal(18, 4)
+  fuente          String?
+  evidenciaUrl    String?
+  comentario      String?
+  metadata        Json?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@index([empresaId, periodoId])
+  @@index([indicadorId, periodoId])
+  @@index([sociedadId])
+  @@index([centroCostoId])
+  @@index([registradoPorId])
+}

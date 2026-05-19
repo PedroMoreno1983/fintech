@@ -1,0 +1,17 @@
+{
+  "name": "Fintech CFO",
+  "short_name": "Fintech CFO",
+  "description": "Plataforma financiera para equipos CFO.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#0f172a",
+  "lang": "es",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "any",
+      "type": "image/x-icon"
+    }
+  ]
+}
