@@ -53,11 +53,11 @@ function isItemActive(pathname: string, href: string) {
 }
 
 const itemBase =
-  "group flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors";
+  "group flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-all duration-150";
 const itemIdle =
-  "text-[var(--color-fg2)] hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-fg1)]";
+  "text-[var(--color-fg2)] hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-fg1)] hover:translate-x-[2px]";
 const itemActive =
-  "bg-[var(--color-surface-muted)] font-medium text-[var(--color-fg1)]";
+  "bg-gradient-to-r from-[var(--color-primary-tint)] to-[var(--color-surface-hover)] border-l-2 border-[var(--color-primary)] font-semibold text-[var(--color-fg1)] shadow-[var(--shadow-glow-blue)]";
 
 export function Sidebar() {
   const pathname = usePathname();
@@ -66,7 +66,7 @@ export function Sidebar() {
   return (
     <aside
       className={cn(
-        "hidden h-screen shrink-0 flex-col border-r border-[var(--color-border)] bg-[var(--color-bg)] transition-all duration-300 lg:flex",
+        "glass-panel hidden h-screen shrink-0 flex-col border-r border-[var(--color-border)] bg-[var(--glass-bg)] backdrop-blur-md transition-all duration-300 lg:flex",
         collapsed ? "w-16" : "w-64"
       )}
     >

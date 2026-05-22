@@ -1,5 +1,5 @@
 function SkeletonBlock({ className }: { className: string }) {
-  return <div className={`animate-pulse rounded-xl bg-gray-200/70 ${className}`} />;
+  return <div className={`shimmer-bg rounded-xl ${className}`} />;
 }
 
 export default function DashboardLoading() {
@@ -12,7 +12,7 @@ export default function DashboardLoading() {
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {Array.from({ length: 4 }).map((_, index) => (
-          <div key={index} className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+          <div key={index} className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-[var(--shadow-card)]">
             <div className="flex items-start justify-between gap-3">
               <div className="space-y-2">
                 <SkeletonBlock className="h-4 w-24" />
@@ -24,7 +24,7 @@ export default function DashboardLoading() {
         ))}
       </div>
 
-      <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+      <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5 shadow-[var(--shadow-card)]">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="space-y-2">
             <SkeletonBlock className="h-4 w-32" />
@@ -40,7 +40,7 @@ export default function DashboardLoading() {
 
       <div className="grid gap-4 lg:grid-cols-2">
         {Array.from({ length: 2 }).map((_, index) => (
-          <div key={index} className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+          <div key={index} className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5 shadow-[var(--shadow-card)]">
             <div className="space-y-4">
               <SkeletonBlock className="h-5 w-40" />
               {Array.from({ length: 3 }).map((__, row) => (
@@ -61,7 +61,7 @@ export default function DashboardLoading() {
         <SkeletonBlock className="h-4 w-28" />
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           {Array.from({ length: 4 }).map((_, index) => (
-            <div key={index} className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+            <div key={index} className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-[var(--shadow-card)]">
               <div className="flex flex-col items-center gap-3">
                 <SkeletonBlock className="h-10 w-10 rounded-xl" />
                 <SkeletonBlock className="h-3 w-20" />

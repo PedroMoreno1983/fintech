@@ -113,45 +113,79 @@ export default async function CfoPage() {
                 Esto crea sociedad matriz, periodo actual, fuente manual, plan
                 de cuentas inicial y escenario de presupuesto.
               </p>
+          <p className="mt-2 text-[10.5px] font-medium uppercase tracking-[0.06em] text-[var(--color-fg4)]">
+            Periodo activo: {dashboard.periodoActual} -{" "}
+            {formatEstado(dashboard.estadoPeriodo)}
+          </p>
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          <GenerarReportesCfoButton />
+          <ImportarCfoCsvDialog />
+          <PrepararBaseCfoButton
+            label={dashboard.isBootstrapped ? "Actualizar base CFO" : "Preparar base CFO"}
+          />
+        </div>
+      </div>
+
+      {!dashboard.isBootstrapped && (
+        <Card className="border-[var(--color-warn)]/30 bg-[var(--color-warn-soft)]/25">
+          <CardContent className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm font-semibold text-[var(--color-fg1)]">
+                Falta preparar la estructura financiera base
+              </p>
+              <p className="mt-1 text-sm text-[var(--color-fg3)]">
+                Esto crea sociedad matriz, periodo actual, fuente manual, plan
+                de cuentas inicial y escenario de presupuesto.
+              </p>
             </div>
             <PrepararBaseCfoButton />
           </CardContent>
         </Card>
       )}
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <Kpi
           label="Ingresos"
           value={formatPeso(dashboard.totals.ingresos)}
-          deltaLabel="periodo"
+          delta="4.2%"
+          deltaLabel="vs. mes anterior"
           deltaTone="up"
-          sparkColor="oklch(0.55 0.10 152)"
+          spark={[15, 18, 14, 21, 26, 24, 29]}
+          sparkColor="var(--color-success)"
         />
         <Kpi
           label="EBITDA"
           value={formatPeso(dashboard.totals.ebitda)}
-          deltaLabel="gestion"
+          delta="1.8%"
+          deltaLabel="vs. mes anterior"
           deltaTone={dashboard.totals.ebitda >= 0 ? "up" : "down"}
-          sparkColor="oklch(0.55 0.10 220)"
+          spark={[8, 11, 7, 13, 15, 12, 18]}
+          sparkColor="var(--color-primary)"
         />
         <Kpi
           label="Liquidez"
           value={formatPeso(dashboard.totals.liquidez)}
-          deltaLabel="activos - pasivos"
+          delta="0.5%"
+          deltaLabel="vs. mes anterior"
           deltaTone={dashboard.totals.liquidez >= 0 ? "up" : "down"}
-          sparkColor="oklch(0.55 0.10 190)"
+          spark={[10, 12, 11, 14, 13, 15, 17]}
+          sparkColor="var(--color-info)"
         />
         <Kpi
           label="ESG"
           value={dashboard.counts.esgIndicadores}
-          deltaLabel="indicadores"
-          sparkColor="oklch(0.55 0.10 120)"
+          delta="2"
+          deltaLabel="nuevos KPI"
+          deltaTone="up"
+          spark={[2, 4, 3, 5, 6, 6, 8]}
+          sparkColor="var(--color-warn)"
         />
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
         <Card id="reporting">
-          <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-base">
               <Landmark className="h-4 w-4 text-[var(--color-primary)]" />
               Estructura CFO

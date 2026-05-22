@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { ChevronDown, Landmark, LogOut, User } from "lucide-react";
+import { useState, useEffect } from "react";
+import { ChevronDown, Landmark, LogOut, Sun, Moon, User } from "lucide-react";
 import { logout } from "@/app/actions/auth";
 
 const ROL_LABELS: Record<string, string> = {
@@ -21,9 +21,22 @@ interface TopBarProps {
 
 export function TopBar({ usuario }: TopBarProps) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [theme, setTheme] = useState<"light" | "dark">("light");
+
+  useEffect(() => {
+    const currentTheme = (document.documentElement.getAttribute("data-theme") as "light" | "dark") || "light";
+    setTheme(currentTheme);
+  }, []);
+
+  const toggleTheme = () => {
+    const nextTheme = theme === "light" ? "dark" : "light";
+    setTheme(nextTheme);
+    document.documentElement.setAttribute("data-theme", nextTheme);
+    localStorage.setItem("theme", nextTheme);
+  };
 
   return (
-    <header className="flex h-14 shrink-0 items-center gap-4 border-b border-[var(--color-border)] bg-[var(--color-bg)]/95 px-4 backdrop-blur lg:px-6">
+    <header className="glass-panel flex h-14 shrink-0 items-center gap-4 border-b border-[var(--color-border)] bg-[var(--glass-bg)] px-4 backdrop-blur lg:px-6 z-10 transition-colors duration-150">
       <div className="flex items-center gap-2 lg:hidden">
         <div className="flex h-7 w-7 items-center justify-center rounded-md bg-[var(--color-fg1)]">
           <Landmark className="h-4 w-4 text-[var(--color-primary)]" />
@@ -34,6 +47,19 @@ export function TopBar({ usuario }: TopBarProps) {
       </div>
 
       <div className="flex-1" />
+
+      <button
+        onClick={toggleTheme}
+        className="flex h-8 w-8 items-center justify-center rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-fg3)] transition-all hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-fg1)] active:scale-90"
+        aria-label="Cambiar tema"
+        title={theme === "light" ? "Modo oscuro" : "Modo claro"}
+      >
+        {theme === "light" ? (
+          <Moon className="h-4 w-4" />
+        ) : (
+          <Sun className="h-4 w-4" />
+        )}
+      </button>
 
       <div className="hidden items-center gap-1.5 rounded-md border border-[var(--color-border-light)] bg-[var(--color-surface-alt)] px-3 py-1 text-sm text-[var(--color-fg3)] sm:flex">
         <span className="max-w-32 truncate font-medium text-[var(--color-fg2)]">
