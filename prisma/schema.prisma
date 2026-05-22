@@ -47,6 +47,7 @@ model Empresa {
   cfoAuditLogs            CfoAuditLog[]
   cfoIndicadoresEsg       CfoIndicadorEsg[]
   cfoMedicionesEsg        CfoMedicionEsg[]
+  cfoTarjetas             CfoTarjetaCorporativa[]
 }
 
 enum Plan {
@@ -88,6 +89,7 @@ model Usuario {
   cfoWorkflowsRechazados      CfoWorkflowAprobacion[]   @relation("CfoWorkflowRechazadoPor")
   cfoAuditLogs                CfoAuditLog[]             @relation("CfoAuditUsuario")
   cfoMedicionesEsgRegistradas CfoMedicionEsg[]          @relation("CfoMedicionEsgRegistradaPor")
+  cfoTarjetas                 CfoTarjetaCorporativa[]
 }
 
 enum Rol {
@@ -135,6 +137,7 @@ model CfoSociedad {
   comentarios           CfoComentarioFinanciero[]
   insights              CfoInsightCfo[]
   medicionesEsg         CfoMedicionEsg[]
+  tarjetas              CfoTarjetaCorporativa[]
 
   @@unique([empresaId, codigo])
   @@index([empresaId, activa, razonSocial])
@@ -196,6 +199,7 @@ model CfoCentroCosto {
   asientoLineas CfoAsientoLinea[]
   planLineas    CfoPlanLinea[]
   medicionesEsg CfoMedicionEsg[]
+  tarjetas      CfoTarjetaCorporativa[]
 
   @@unique([empresaId, codigo])
   @@index([empresaId, activo, nombre])
@@ -961,3 +965,72 @@ model CfoMedicionEsg {
   @@index([centroCostoId])
   @@index([registradoPorId])
 }
+
+// ---------------------------------------------------------------------------
+// CFO PLATFORM: TARJETAS CORPORATIVAS Y CONTROLLING (MOSS STYLE)
+// ---------------------------------------------------------------------------
+
+model CfoTarjetaCorporativa {
+  id                String            @id @default(cuid())
+  empresaId         String
+  empresa           Empresa           @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  usuarioId         String
+  usuario           Usuario           @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  sociedadId        String?
+  sociedad          CfoSociedad?      @relation(fields: [sociedadId], references: [id], onDelete: SetNull)
+  centroCostoId     String?
+  centroCosto       CfoCentroCosto?   @relation(fields: [centroCostoId], references: [id], onDelete: SetNull)
+  numeroEnmascarado String
+  marca             String            @default("VISA")
+  titular           String
+  limiteUF          Decimal?          @db.Decimal(12, 4)
+  limiteMensualCLP  Decimal           @db.Decimal(18, 4)
+  gastadoMensual    Decimal           @default(0) @db.Decimal(18, 4)
+  estado            CfoEstadoTarjeta  @default(ACTIVA)
+  tipo              CfoTipoTarjeta    @default(VIRTUAL)
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  transacciones     CfoTarjetaTransaccion[]
+
+  @@index([empresaId, usuarioId])
+  @@index([sociedadId])
+  @@index([centroCostoId])
+}
+
+enum CfoEstadoTarjeta {
+  ACTIVA
+  BLOQUEADA
+  SUSPENDIDA
+}
+
+enum CfoTipoTarjeta {
+  FISICA
+  VIRTUAL
+}
+
+model CfoTarjetaTransaccion {
+  id              String               @id @default(cuid())
+  tarjetaId       String
+  tarjeta         CfoTarjetaCorporativa @relation(fields: [tarjetaId], references: [id], onDelete: Cascade)
+  fecha           DateTime
+  comercio        String
+  monto           Decimal              @db.Decimal(18, 4)
+  moneda          String               @default("CLP")
+  montoCLP        Decimal              @db.Decimal(18, 4)
+  montoUF         Decimal?             @db.Decimal(12, 4)
+  estado          CfoEstadoTransaccion @default(APROBADA)
+  categoria       String?
+  comprobanteUrl  String?
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+
+  @@index([tarjetaId, fecha])
+}
+
+enum CfoEstadoTransaccion {
+  PENDIENTE
+  APROBADA
+  RECHAZADA
+  REQUERIR_COMPROBANTE
+}
+
