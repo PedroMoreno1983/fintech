@@ -12,7 +12,7 @@ export default function LoginPage() {
 
   return (
     <div className="flex min-h-screen bg-[var(--color-bg)]">
-      <div className="hidden w-2/5 flex-col justify-between bg-[var(--color-fg1)] p-12 text-white lg:flex">
+      <div className="hidden w-2/5 flex-col justify-between bg-gradient-to-br from-[#090d16] to-[#121929] border-r border-[#1e293b]/50 p-12 text-white lg:flex">
         <div className="flex items-center gap-3">
           <div className="flex h-9 w-9 items-center justify-center rounded-md bg-white/10">
             <Landmark className="h-5 w-5 text-[var(--color-primary)]" />
