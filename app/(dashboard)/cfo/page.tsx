@@ -102,31 +102,6 @@ export default async function CfoPage() {
         </div>
       </div>
 
-      {!dashboard.isBootstrapped && (
-        <Card className="border-[var(--color-warn)]/30 bg-[var(--color-warn-soft)]/25">
-          <CardContent className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="text-sm font-semibold text-[var(--color-fg1)]">
-                Falta preparar la estructura financiera base
-              </p>
-              <p className="mt-1 text-sm text-[var(--color-fg3)]">
-                Esto crea sociedad matriz, periodo actual, fuente manual, plan
-                de cuentas inicial y escenario de presupuesto.
-              </p>
-          <p className="mt-2 text-[10.5px] font-medium uppercase tracking-[0.06em] text-[var(--color-fg4)]">
-            Periodo activo: {dashboard.periodoActual} -{" "}
-            {formatEstado(dashboard.estadoPeriodo)}
-          </p>
-        </div>
-
-        <div className="flex flex-wrap gap-2">
-          <GenerarReportesCfoButton />
-          <ImportarCfoCsvDialog />
-          <PrepararBaseCfoButton
-            label={dashboard.isBootstrapped ? "Actualizar base CFO" : "Preparar base CFO"}
-          />
-        </div>
-      </div>
 
       {!dashboard.isBootstrapped && (
         <Card className="border-[var(--color-warn)]/30 bg-[var(--color-warn-soft)]/25">
@@ -186,6 +161,7 @@ export default async function CfoPage() {
 
       <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
         <Card id="reporting">
+          <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-base">
               <Landmark className="h-4 w-4 text-[var(--color-primary)]" />
               Estructura CFO
