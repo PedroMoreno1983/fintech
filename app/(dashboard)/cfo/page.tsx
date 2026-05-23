@@ -75,26 +75,7 @@ export default async function CfoPage(props: {
   let consolidacion: any = null;
   let operacionesIntercompany: any[] = [];
 
-  if (currentTab === "moss") {
-    [tarjetas, usuarios, sociedades, centrosCosto] = await Promise.all([
-      obtenerTarjetas(),
-      db.usuario.findMany({
-        where: { empresaId: session.empresaId },
-        select: { id: true, nombre: true, email: true },
-        orderBy: { nombre: "asc" },
-      }),
-      db.cfoSociedad.findMany({
-        where: { empresaId: session.empresaId, activa: true },
-        select: { id: true, codigo: true, razonSocial: true, tipo: true },
-        orderBy: { codigo: "asc" },
-      }),
-      db.cfoCentroCosto.findMany({
-        where: { empresaId: session.empresaId, activo: true },
-        select: { id: true, codigo: true, nombre: true },
-        orderBy: { codigo: "asc" },
-      }),
-    ]);
-  } else if (currentTab === "lucanet") {
+  if (currentTab === "consolidacion" || currentTab === "lucanet") {
     [consolidacion, operacionesIntercompany, sociedades] = await Promise.all([
       db.cfoConsolidacion.findFirst({
         where: { empresaId: session.empresaId },
@@ -109,6 +90,7 @@ export default async function CfoPage(props: {
       }),
     ]);
   }
+
 
   const structureItems = [
     {
@@ -144,20 +126,21 @@ export default async function CfoPage(props: {
         <div>
           <div className="flex items-center gap-3">
             <h1 className="text-[22px] font-bold leading-tight tracking-tight text-slate-100 bg-gradient-to-r from-slate-100 via-slate-300 to-slate-400 bg-clip-text text-transparent">
-              CFO Platform Premium
+              Plataforma CFO ConsoliFlow
             </h1>
             <span className="text-[9px] font-bold bg-gradient-to-r from-teal-500 to-emerald-500 text-slate-950 px-2 py-0.5 rounded-full uppercase tracking-wider">
               LATAM
             </span>
           </div>
           <p className="mt-1 max-w-3xl text-[13px] text-slate-400">
-            Consolidación intercompany automática, control de tarjetas corporativas (Moss & LucaNet), y auditoría inteligente.
+            Consolidación intercompany automática, conciliación multi-entidad en tiempo real y auditoría financiera inteligente.
           </p>
           <p className="mt-2 text-[10.5px] font-semibold uppercase tracking-[0.06em] text-teal-400">
             Periodo activo: {dashboard.periodoActual} -{" "}
             {formatEstado(dashboard.estadoPeriodo)}
           </p>
         </div>
+
 
         <div className="flex flex-col sm:flex-row items-end gap-3">
           {/* Mini-ticker dinámico chileno */}
@@ -198,26 +181,17 @@ export default async function CfoPage(props: {
           Resumen General
         </Link>
         <Link
-          href="?tab=moss"
+          href="?tab=consolidacion"
           className={`px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all duration-300 border-b-2 -mb-[2px] ${
-            currentTab === "moss"
+            currentTab === "consolidacion" || currentTab === "lucanet"
               ? "border-teal-500 text-teal-400"
               : "border-transparent text-slate-400 hover:text-slate-200"
           }`}
         >
-          Tarjetas Moss (Chile/LATAM)
-        </Link>
-        <Link
-          href="?tab=lucanet"
-          className={`px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all duration-300 border-b-2 -mb-[2px] ${
-            currentTab === "lucanet"
-              ? "border-teal-500 text-teal-400"
-              : "border-transparent text-slate-400 hover:text-slate-200"
-          }`}
-        >
-          LucaNet Intercompany
+          Consolidación Intercompany
         </Link>
       </div>
+
 
       {/* Contenido condicional */}
       {currentTab === "resumen" && (
@@ -804,7 +778,7 @@ export default async function CfoPage(props: {
         </div>
       )}
 
-      {currentTab === "lucanet" && (
+      {(currentTab === "consolidacion" || currentTab === "lucanet") && (
         <div className="bg-slate-900/40 p-6 rounded-3xl border border-slate-800 shadow-2xl">
           {consolidacion ? (
             <IntercompanyLucaNet
@@ -818,7 +792,7 @@ export default async function CfoPage(props: {
               <div className="max-w-md mx-auto space-y-2">
                 <h3 className="font-bold text-base text-slate-200">Ciclo de Consolidación Inactivo</h3>
                 <p className="text-xs text-slate-400 leading-relaxed">
-                  Para poder visualizar el mapa de deudas intercompany y aplicar asientos de eliminación de LucaNet,
+                  Para poder visualizar el mapa de deudas intercompany y aplicar asientos de eliminación recíproca de ConsoliFlow,
                   debes primero generar una consolidación en el periodo activo.
                 </p>
               </div>
@@ -830,3 +804,4 @@ export default async function CfoPage(props: {
     </div>
   );
 }
+

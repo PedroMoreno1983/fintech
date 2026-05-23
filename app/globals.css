@@ -300,4 +300,35 @@ body {
   border-color: rgba(6, 182, 212, 0.6) !important;
 }
 
+/* AI Laser Scanning animation */
+.laser-scanner {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, rgba(34, 197, 94, 0.8), transparent);
+  box-shadow: 0 0 15px 3px rgba(34, 197, 94, 0.8);
+  animation: laser-sweep 2.5s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 20;
+}
+
+@keyframes laser-sweep {
+  0% {
+    top: 0%;
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    top: 100%;
+    opacity: 0;
+  }
+}
+
+
 
