@@ -20,7 +20,10 @@ import { db } from "@/lib/db";
 import { requireEmpresaSession } from "@/lib/session";
 import { ensureCfoBaseStructure } from "@/lib/cfo";
 import { validarRut, formatearRut } from "@/lib/rut";
+import { convertirUSDaCLP } from "@/lib/uf";
 export type ActionState = {
+
+
   errors?: Record<string, string[]>;
   message?: string;
   success?: boolean;
@@ -244,6 +247,7 @@ export async function importarAsientosCfoCsv(
     const credito = parseImportedNumber(getRowValue(row, "credito", "haber"), 0);
     const sociedad = sociedadByCode.get(sociedadCodigo);
     const cuenta = cuentaByCode.get(cuentaCodigo);
+    const moneda = normalizeCode(getRowValue(row, "moneda") || "CLP");
 
     const terceroRutRaw = getRowValue(row, "tercerorut", "ruttercero", "rut");
     let terceroRutValido = null;
@@ -289,6 +293,20 @@ export async function importarAsientosCfoCsv(
       errores.push(`Fila ${index + 2}: una linea no puede tener debito y credito`);
     }
 
+    // Conversión a Pesos Chilenos (CLP) si es moneda extranjera
+    let debitoCLP = debito;
+    let creditoCLP = credito;
+    if (fecha) {
+      if (moneda === "USD") {
+        debitoCLP = convertirUSDaCLP(debito, fecha);
+        creditoCLP = convertirUSDaCLP(credito, fecha);
+      } else if (moneda === "BRL") {
+        const valorBRL = 175 + Math.sin(fecha.getDate() * 0.5) * 5;
+        debitoCLP = Math.round(debito * valorBRL);
+        creditoCLP = Math.round(credito * valorBRL);
+      }
+    }
+
     return {
       index,
       fecha,
@@ -302,10 +320,13 @@ export async function importarAsientosCfoCsv(
       terceroNombre: getRowValue(row, "terceronombre", "nombretercero", "tercero"),
       documentoTipo: getRowValue(row, "documentotipo", "tipodocumento", "tipodoc"),
       documentoFolio: getRowValue(row, "documentofolio", "folio", "nrodocumento"),
-      debito,
-      credito,
-      moneda: normalizeCode(getRowValue(row, "moneda") || "CLP"),
+      debito: debitoCLP,
+      credito: creditoCLP,
+      originalDebito: debito,
+      originalCredito: credito,
+      moneda,
     };
+
   });
 
   if (errores.length > 0) {
@@ -367,12 +388,12 @@ export async function importarAsientosCfoCsv(
 
   const descuadres: string[] = [];
   for (const group of asientoGroups.values()) {
-    const debitos = group.reduce((sum, row) => sum + row.debito, 0);
-    const creditos = group.reduce((sum, row) => sum + row.credito, 0);
-    if (!moneyEquals(debitos, creditos)) {
+    const originalDebitos = group.reduce((sum, row) => sum + row.originalDebito, 0);
+    const originalCreditos = group.reduce((sum, row) => sum + row.originalCredito, 0);
+    if (!moneyEquals(originalDebitos, originalCreditos)) {
       const sample = group[0];
       descuadres.push(
-        `Asiento ${sample.numero} (${sample.periodo}): debe ${debitos} vs haber ${creditos}`
+        `Asiento ${sample.numero} (${sample.periodo}): debe original ${originalDebitos} ${sample.moneda} vs haber original ${originalCreditos} ${sample.moneda}`
       );
     }
   }
@@ -445,6 +466,9 @@ export async function importarAsientosCfoCsv(
             moneda: row.moneda,
             metadata: {
               csvRow: row.index + 2,
+              originalDebito: row.originalDebito,
+              originalCredito: row.originalCredito,
+              originalMoneda: row.moneda,
             },
           },
         });

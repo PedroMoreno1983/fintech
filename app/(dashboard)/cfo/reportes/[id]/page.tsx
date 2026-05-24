@@ -15,6 +15,7 @@ import { Kpi } from "@/app/components/ui/kpi";
 import { db } from "@/lib/db";
 import { requireEmpresaSession } from "@/lib/session";
 import { formatFecha, formatFechaHora, formatNumero, formatPeso } from "@/lib/utils";
+import { PrintButton } from "@/app/components/cfo/print-button";
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -138,13 +139,76 @@ export default async function CfoReportePage({ params }: PageProps) {
     notFound();
   }
 
+  const asientoLineas = await db.cfoAsientoLinea.findMany({
+    where: {
+      empresaId: session.empresaId,
+      asiento: { periodoId: reporte.periodo.id },
+    },
+    include: {
+      sociedad: { select: { codigo: true } },
+    },
+  });
+
+  const montosPorCuentaYSociedad: Record<string, Record<string, number>> = {};
+  for (const al of asientoLineas) {
+    if (!al.cuentaId) continue;
+    const socCodigo = al.sociedad?.codigo || "MATRIZ";
+    const monto = Number(al.monto || 0);
+    if (!montosPorCuentaYSociedad[al.cuentaId]) {
+      montosPorCuentaYSociedad[al.cuentaId] = {};
+    }
+    montosPorCuentaYSociedad[al.cuentaId][socCodigo] =
+      (montosPorCuentaYSociedad[al.cuentaId][socCodigo] || 0) + monto;
+  }
+
   const kpis = buildKpis(reporte.tipo, reporte.data);
 
   return (
-    <div className="mx-auto flex max-w-[1320px] flex-col gap-4 p-5 lg:p-6">
+    <div className="mx-auto flex max-w-[1320px] flex-col gap-4 p-5 lg:p-6 print-container">
+      <style dangerouslySetInnerHTML={{ __html: `
+        @media print {
+          body {
+            background: white !important;
+            color: black !important;
+          }
+          .no-print, header, nav, button, a, .back-button, .workflow-actions-panel {
+            display: none !important;
+          }
+          .print-container {
+            width: 100% !important;
+            max-width: 100% !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            box-shadow: none !important;
+          }
+          .print-table th, .print-table td {
+            padding: 6px 8px !important;
+            font-size: 10px !important;
+            border: 1px solid #e2e8f0 !important;
+          }
+          .print-table th {
+            background-color: #f8fafc !important;
+            color: #0f172a !important;
+          }
+          .print-table {
+            width: 100% !important;
+            border-collapse: collapse !important;
+          }
+          .card-print {
+            border: none !important;
+            box-shadow: none !important;
+            background: transparent !important;
+            padding: 0 !important;
+          }
+          .print-grid-full {
+            grid-template-columns: 1fr !important;
+          }
+        }
+      ` }} />
+
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0">
-          <Button asChild variant="ghost" size="sm" className="-ml-2 mb-2">
+          <Button asChild variant="ghost" size="sm" className="-ml-2 mb-2 no-print">
             <Link href="/cfo">
               <ArrowLeft className="h-4 w-4" />
               CFO Platform
@@ -164,7 +228,8 @@ export default async function CfoReportePage({ params }: PageProps) {
           </p>
         </div>
 
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 no-print">
+          <PrintButton />
           <Button asChild variant="outline">
             <Link href={`/cfo/reportes/${reporte.id}/export`}>
               <Download className="h-4 w-4" />
@@ -174,7 +239,7 @@ export default async function CfoReportePage({ params }: PageProps) {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 no-print">
         {kpis.map((item) => (
           <Kpi
             key={item.label}
@@ -186,67 +251,88 @@ export default async function CfoReportePage({ params }: PageProps) {
         ))}
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[0.72fr_0.28fr]">
-        <Card>
+      <div className="grid gap-6 xl:grid-cols-[0.72fr_0.28fr] print-grid-full">
+        <Card className="card-print">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-base">
-              <FileBarChart className="h-4 w-4 text-blue-600" />
-              Lineas del reporte
+              <FileBarChart className="h-4 w-4 text-blue-600 no-print" />
+              Líneas del reporte consolidado (Ledger Multi-Sociedad)
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="overflow-hidden rounded-lg border border-[var(--color-border)]">
-              <div className="grid grid-cols-[54px_1.5fr_0.8fr_0.8fr_0.7fr] gap-3 bg-[var(--color-surface-muted)] px-3 py-2 text-[11px] font-medium uppercase tracking-[0.04em] text-[var(--color-fg3)] max-lg:hidden">
-                <span>Orden</span>
-                <span>Concepto</span>
-                <span className="text-right">Actual</span>
-                <span className="text-right">Comparativo</span>
-                <span className="text-right">Var.</span>
-              </div>
-              <div className="divide-y divide-[var(--color-border)]">
-                {reporte.lineas.map((linea) => (
-                  <div
-                    key={linea.id}
-                    className="grid gap-2 px-3 py-3 text-sm lg:grid-cols-[54px_1.5fr_0.8fr_0.8fr_0.7fr] lg:gap-3"
-                  >
-                    <span className="hidden text-xs text-[var(--color-fg4)] lg:block">
-                      {linea.orden}
-                    </span>
-                    <div className="min-w-0">
-                      <p className="font-medium text-[var(--color-fg1)]">
-                        {linea.etiqueta}
-                      </p>
-                      <p className="mt-0.5 truncate text-xs text-[var(--color-fg3)]">
-                        {linea.cuenta
-                          ? `${linea.cuenta.codigo} - ${linea.cuenta.nombre}`
-                          : "Sin cuenta asociada"}
-                        {linea.sociedad
-                          ? ` - ${linea.sociedad.codigo} ${linea.sociedad.razonSocial}`
-                          : ""}
-                      </p>
-                    </div>
-                    <p className="tnum text-left font-medium text-[var(--color-fg1)] lg:text-right">
-                      {formatPeso(toNumber(linea.montoActual))}
-                    </p>
-                    <p className="tnum text-left text-[var(--color-fg3)] lg:text-right">
-                      {formatPeso(toNumber(linea.montoComparativo))}
-                    </p>
-                    <div className="text-left lg:text-right">
-                      <p className="tnum text-[var(--color-fg2)]">
-                        {formatPeso(toNumber(linea.variacion))}
-                      </p>
-                      <p className="tnum text-xs text-[var(--color-fg4)]">
-                        {formatPct(linea.variacionPct)}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
+            <div className="overflow-x-auto rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] shadow-sm">
+              <table className="w-full border-collapse text-left text-sm print-table">
+                <thead>
+                  <tr className="bg-[var(--color-surface-muted)] border-b border-[var(--color-border)] text-[11px] font-semibold uppercase tracking-wider text-[var(--color-fg3)]">
+                    <th className="px-3 py-2.5 text-center w-12">N°</th>
+                    <th className="px-3 py-2.5 min-w-[200px]">Concepto Contable</th>
+                    <th className="px-3 py-2.5 text-right whitespace-nowrap">Matriz (CLP)</th>
+                    <th className="px-3 py-2.5 text-right whitespace-nowrap">Filial CL (CLP)</th>
+                    <th className="px-3 py-2.5 text-right whitespace-nowrap">Filial BR (CLP)</th>
+                    <th className="px-3 py-2.5 text-right whitespace-nowrap">Eliminaciones</th>
+                    <th className="px-3 py-2.5 text-right whitespace-nowrap">Conversión FX</th>
+                    <th className="px-3 py-2.5 text-right whitespace-nowrap font-semibold text-[var(--color-fg1)] bg-blue-500/5">Consolidado</th>
+                    <th className="px-3 py-2.5 text-right whitespace-nowrap">Comparativo</th>
+                    <th className="px-3 py-2.5 text-right whitespace-nowrap">Var.</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[var(--color-border)]">
+                  {reporte.lineas.map((linea) => {
+                      const actualMatriz = montosPorCuentaYSociedad[linea.cuentaId || ""]?.["MATRIZ"] || 0;
+                    const actualFilialCL = montosPorCuentaYSociedad[linea.cuentaId || ""]?.["FILIAL_CL"] || 0;
+                    const actualFilialBR = montosPorCuentaYSociedad[linea.cuentaId || ""]?.["FILIAL_BR"] || 0;
+
+                    const totalIndividual = actualMatriz + actualFilialCL + actualFilialBR;
+                    const totalConsolidado = toNumber(linea.montoActual) || 0;
+
+                    const rest = totalConsolidado - totalIndividual;
+
+                    let eliminaciones = 0;
+                    let conversionFX = 0;
+
+                    if (linea.cuenta?.codigo.startsWith("12") || linea.cuenta?.codigo.startsWith("21")) {
+                      eliminaciones = rest;
+                    } else {
+                      conversionFX = rest;
+                    }
+
+                    const variacionNum = toNumber(linea.variacion) || 0;
+                    const montoComparativoNum = toNumber(linea.montoComparativo) || 0;
+
+                    return (
+                      <tr key={linea.id} className="hover:bg-[var(--color-surface-hover)] transition-colors">
+                        <td className="px-3 py-3 text-center text-xs text-[var(--color-fg4)] font-mono">{linea.orden}</td>
+                        <td className="px-3 py-3">
+                          <div className="font-medium text-[var(--color-fg1)]">{linea.etiqueta}</div>
+                          {linea.cuenta && (
+                            <div className="text-[11px] text-[var(--color-fg3)] font-mono mt-0.5">
+                              {linea.cuenta.codigo} - {linea.cuenta.nombre}
+                            </div>
+                          )}
+                        </td>
+                        <td className="px-3 py-3 text-right font-mono text-[var(--color-fg2)] whitespace-nowrap tabular-nums">{formatPeso(actualMatriz)}</td>
+                        <td className="px-3 py-3 text-right font-mono text-[var(--color-fg2)] whitespace-nowrap tabular-nums">{formatPeso(actualFilialCL)}</td>
+                        <td className="px-3 py-3 text-right font-mono text-[var(--color-fg2)] whitespace-nowrap tabular-nums">{formatPeso(actualFilialBR)}</td>
+                        <td className={`px-3 py-3 text-right font-mono whitespace-nowrap tabular-nums ${eliminaciones !== 0 ? 'text-amber-600 dark:text-amber-400 font-medium' : 'text-[var(--color-fg4)]'}`}>{formatPeso(eliminaciones)}</td>
+                        <td className={`px-3 py-3 text-right font-mono whitespace-nowrap tabular-nums ${conversionFX !== 0 ? 'text-indigo-600 dark:text-indigo-400 font-medium' : 'text-[var(--color-fg4)]'}`}>{formatPeso(conversionFX)}</td>
+                        <td className="px-3 py-3 text-right font-mono font-semibold text-[var(--color-fg1)] bg-blue-500/5 whitespace-nowrap tabular-nums">{formatPeso(totalConsolidado)}</td>
+                        <td className="px-3 py-3 text-right font-mono text-[var(--color-fg3)] whitespace-nowrap tabular-nums">{formatPeso(montoComparativoNum)}</td>
+                        <td className="px-3 py-3 text-right whitespace-nowrap">
+                          <span className={`font-mono text-xs tabular-nums ${variacionNum > 0 ? 'text-emerald-600 dark:text-emerald-400' : variacionNum < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-[var(--color-fg3)]'}`}>
+                            {formatPeso(variacionNum)}
+                          </span>
+                          <div className="text-[10px] text-[var(--color-fg4)] font-mono tabular-nums">{formatPct(linea.variacionPct)}</div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
           </CardContent>
         </Card>
 
-        <div className="space-y-6">
+        <div className="space-y-6 no-print">
           <CfoReporteWorkflowActions
             reporteId={reporte.id}
             estado={reporte.estado}

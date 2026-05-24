@@ -127,6 +127,46 @@ export async function ensureCfoBaseStructure({
       },
     });
 
+    await tx.cfoSociedad.upsert({
+      where: {
+        empresaId_codigo: {
+          empresaId,
+          codigo: "FILIAL_CL",
+        },
+      },
+      update: {
+        activa: true,
+      },
+      create: {
+        empresaId,
+        codigo: "FILIAL_CL",
+        razonSocial: "ConsoliFlow Chile S.A.",
+        nombreFantasia: "Filial CL",
+        tipo: CfoTipoSociedad.FILIAL,
+        monedaFuncional: "CLP",
+      },
+    });
+
+    await tx.cfoSociedad.upsert({
+      where: {
+        empresaId_codigo: {
+          empresaId,
+          codigo: "FILIAL_BR",
+        },
+      },
+      update: {
+        activa: true,
+      },
+      create: {
+        empresaId,
+        codigo: "FILIAL_BR",
+        razonSocial: "ConsoliFlow Brasil Ltda.",
+        nombreFantasia: "Filial BR",
+        tipo: CfoTipoSociedad.FILIAL,
+        monedaFuncional: "BRL",
+      },
+    });
+
     await tx.cfoFuenteDatos.upsert({
       where: {
         empresaId_nombre: {
@@ -233,7 +273,7 @@ export async function ensureCfoBaseStructure({
         creadoPorId: usuarioId,
       },
     });
-  });
+  }, { maxWait: 15000, timeout: 30000 });
 }
 
 export async function getCfoDashboard(empresaId: string) {
